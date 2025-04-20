@@ -37,7 +37,7 @@ course_structure = {
 # Default folder structure for Lab
 lab_structure = {
     'Task': ['Task 1', 'Task 2', 'Task 3', 'Task 4', 'Task 5', 'Task 6', 'Task 7', 'Task 8', 'Task 9', 'Task 10', 'Task 11', 'Task 12', 'Task 13', 'Task 14'],
-    # 'Attendance': [],
+    'Attendance': [],
     'Course Description': [],
     'Course Log': [],
     'Lab Module': [],
@@ -60,7 +60,7 @@ format_mapping = {
     },
     'Lab': {
         'Task': '{session}-{dept}-{section}-{course}-Task{number}-{rating}',
-        # 'Attendance': '{session}-{dept}-{section}-{course}-Attendance',
+        'Attendance': '{session}-{dept}-{section}-{course}-Attendance',
         'Course Description': '{session}-{dept}-{section}-{course}-CourseDescription-Form',
         'Course Log': '{session}-{dept}-{section}-{course}-Course-Log',
         'Lab Module': '{session}-{dept}-{section}-{course}-Lab-Module',
@@ -106,12 +106,21 @@ def rename_files_route():
     if not base_path or not os.path.isdir(base_path):
         return jsonify({'error': 'Invalid base path provided'}), 400
 
-    # Extract session (e.g., "Fall 24" → "F24")
+    # Try to extract session from base_path
     session_match = re.search(r'(Fall|Spring) (\d{2})', base_path, re.IGNORECASE)
+
+    # If not found, try from 'rename-session' in the request
+    if not session_match:
+        rename_session = data.get('session')
+        print("testing: ",rename_session)
+        if rename_session:
+            session_match = re.search(r'(Fall|Spring) (\d{2})', rename_session, re.IGNORECASE)
+
+    # If still not found, return error
     if session_match:
         session = session_match.group(1)[0].upper() + session_match.group(2)
     else:
-        return jsonify({'error': 'Session folder not found in base path'}), 400
+        return jsonify({'error': 'Session information not found'}), 400
 
     renamed_files = []
 
@@ -221,7 +230,7 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
 
                     # Generate new file name
                     question_file = os.path.join(root, file)
-                    new_question_name = f"{session}-{dept}-{section}-{course}-{cleaned_file_type}-{matched_type}.txt"
+                    new_question_name = f"{session}-{dept}-{section}-{course}-{cleaned_file_type}-{matched_type}{os.path.splitext(file)[-1]}"
                     new_question_path = os.path.join(root, new_question_name)
                     
                     try:
