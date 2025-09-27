@@ -3,6 +3,8 @@ import random
 import os
 import re
 import shutil
+import zipfile
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -69,6 +71,9 @@ format_mapping = {
     }
 }
 
+# Add title options
+title_options = ['Mr.', 'Ms.', 'Mrs.', 'Dr.']
+
 def create_folders(base_path, folder_structure):
     """Create folders based on the provided structure."""
     for folder, subfolders in folder_structure.items():
@@ -77,25 +82,60 @@ def create_folders(base_path, folder_structure):
         for subfolder in subfolders:
             os.makedirs(os.path.join(folder_path, subfolder), exist_ok=True)
 
+def create_backup(base_path):
+    """Create a backup of the folder structure before renaming."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_folder_name = f"backup_{timestamp}"
+    
+    # Create backup in the parent directory of base_path
+    parent_dir = os.path.dirname(base_path)
+    backup_path = os.path.join(parent_dir, backup_folder_name)
+    
+    # Create a zip file backup
+    zip_path = backup_path + ".zip"
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(base_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, base_path)
+                zipf.write(file_path, arcname)
+    
+    return zip_path
+
+def generate_sessions():
+    """Generate session options from 2015 to current year."""
+    current_year = datetime.now().year
+    sessions = []
+    for year in range(2015, current_year + 1):
+        sessions.extend([f"Fall {year}", f"Spring {year}"])
+    return sessions
+
 @app.route('/create-folders', methods=['POST'])
 def create_folders_route():
     """Endpoint to create folders dynamically."""
     data = request.json
     base_path = data.get('base_path')
-    session_folder = data.get('session')
+    session_folder = data.get('session').split(' ')[0] + ' ' + data.get('session').split(' ')[1][-2:]
     dept_folder = data.get('dept')
     section_folder = data.get('section')
     course_folder = data.get('course')
-    folder_type = data.get('type')  # "Course" or "Lab"
+    course_folder = ' '.join(word.capitalize() for word in course_folder.split())
+    folder_type = data.get('type')
+    title = data.get('title')
+    teacher_name = data.get('teacher_name')
 
     if not base_path or not os.path.isdir(base_path):
         return jsonify({'error': 'Invalid base path provided'}), 400
 
+    # Capitalize teacher name
+    formatted_name = ' '.join(word.capitalize() for word in teacher_name.split())
+    teacher_folder = f"{title} {formatted_name}"
+    
     folder_structure = course_structure if folder_type == 'Course' else lab_structure
-    final_path = base_path+'\\'+session_folder+'\\'+dept_folder+'\\'+'Semester '+section_folder[0]+'\\'+section_folder+'\\'+course_folder
+    final_path = os.path.join(base_path, teacher_folder, session_folder, dept_folder, f'Semester {section_folder[0]}', section_folder, course_folder)
+    
     create_folders(final_path, folder_structure)
-
-    return jsonify({'message': f"{folder_type} folder structure created at {base_path}"}), 200
+    return jsonify({'message': f"{folder_type} folder structure created at {final_path}"}), 200
 
 @app.route('/rename-files', methods=['POST'])
 def rename_files_route():
@@ -106,27 +146,43 @@ def rename_files_route():
     if not base_path or not os.path.isdir(base_path):
         return jsonify({'error': 'Invalid base path provided'}), 400
 
-    # Try to extract session from base_path
-    session_match = re.search(r'(Fall|Spring) (\d{2})', base_path, re.IGNORECASE)
-
-    # If not found, try from 'rename-session' in the request
-    if not session_match:
-        rename_session = data.get('session')
-        print("testing: ",rename_session)
-        if rename_session:
-            session_match = re.search(r'(Fall|Spring) (\d{2})', rename_session, re.IGNORECASE)
-
-    # If still not found, return error
-    if session_match:
-        session = session_match.group(1)[0].upper() + session_match.group(2)
-    else:
-        return jsonify({'error': 'Session information not found'}), 400
+    # Create backup before renaming
+    try:
+        backup_path = create_backup(base_path)
+        print(f"Backup created at: {backup_path}")
+    except Exception as e:
+        return jsonify({'error': f'Failed to create backup: {str(e)}'}), 500
 
     renamed_files = []
 
+    # Check if base_path ends with a session folder (e.g., "Spring 25", "Fall 24")
+    base_folder_name = os.path.basename(base_path)
+    session_match = re.search(r'(Fall|Spring)\s*(\d{2})', base_folder_name, re.IGNORECASE)
+    
+    if session_match:
+        # Direct session folder - rename only this session
+        session = session_match.group(1)[0].upper() + session_match.group(2)
+        renamed_files.extend(process_session_path(base_path, session))
+    else:
+        # Teacher folder or higher level - process all sessions within
+        for item in os.listdir(base_path):
+            item_path = os.path.join(base_path, item)
+            if os.path.isdir(item_path):
+                # Check if this is a session folder
+                session_match = re.search(r'(Fall|Spring)\s*(\d{2})', item, re.IGNORECASE)
+                if session_match:
+                    session = session_match.group(1)[0].upper() + session_match.group(2)
+                    renamed_files.extend(process_session_path(item_path, session))
+
+    return jsonify({'renamed_files': renamed_files}), 200
+
+def process_session_path(session_path, session):
+    """Process a single session path for file renaming."""
+    renamed_files = []
+    
     # Walk through department folders
-    for dept_folder in os.listdir(base_path):
-        dept_path = os.path.join(base_path, dept_folder)
+    for dept_folder in os.listdir(session_path):
+        dept_path = os.path.join(session_path, dept_folder)
         if os.path.isdir(dept_path) and dept_folder in ['AI', 'DS', 'SE', 'CS']:
             # Walk through semester folders
             for semester_folder in os.listdir(dept_path):
@@ -140,20 +196,9 @@ def rename_files_route():
                             for course_folder in os.listdir(section_path):
                                 course_path = os.path.join(section_path, course_folder)
                                 if os.path.isdir(course_path):
-                                    # Define a list of stop words to skip
-                                    stop_words = {"for", "and", "the", "of", "in", "on", "at", "by", "to", "with", "a", "an"}
-
-                                    # Remove text after '(' and trim the course folder
-                                    course_folder_cleaned = re.split(r'\s*\(', course_folder)[0]
-
-                                    # Extract short form of course
-                                    course_short = ''.join(
-                                        word[0].upper() for word in re.findall(r'\b\w+\b', course_folder_cleaned) if word.lower() not in stop_words
-                                    )
-
-                                    # Debugging: Print the short form for verification
-                                    print(f"Course Folder: {course_folder}, Short Form: {course_short}")
-
+                                    # Get course short form
+                                    course_short = get_course_short_form(course_folder)
+                                    
                                     # Detect if it's a Lab or Course
                                     folder_type = detect_folder_type(course_path)
 
@@ -167,9 +212,8 @@ def rename_files_route():
                                         course_short,
                                         folder_type
                                     ))
-
-
-    return jsonify({'renamed_files': renamed_files}), 200
+    
+    return renamed_files
 
 def detect_folder_type(course_path):
     """Determine if a folder represents a Lab or a Course."""
@@ -482,6 +526,269 @@ def list_folders():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/get-sessions', methods=['GET'])
+def get_sessions():
+    """Endpoint to get dynamic session options."""
+    sessions = generate_sessions()
+    return jsonify({'sessions': sessions})
+
+@app.route('/get-titles', methods=['GET'])
+def get_titles():
+    """Endpoint to get title options."""
+    return jsonify({'titles': title_options})
+
+@app.route('/get-teachers', methods=['POST'])
+def get_teachers():
+    """Get list of teachers from base path."""
+    data = request.json
+    base_path = data.get('base_path')
+    
+    if not base_path or not os.path.isdir(base_path):
+        return jsonify({'error': 'Invalid base path provided'}), 400
+    
+    teachers = []
+    sessions = set()
+    
+    try:
+        for item in os.listdir(base_path):
+            item_path = os.path.join(base_path, item)
+            if os.path.isdir(item_path):
+                # Check if this looks like a teacher folder
+                if any(item.startswith(title) for title in ['Mr.', 'Ms.', 'Mrs.', 'Dr.']):
+                    teachers.append(item)
+                    
+                    # Get sessions for this teacher
+                    for session_item in os.listdir(item_path):
+                        session_path = os.path.join(item_path, session_item)
+                        if os.path.isdir(session_path):
+                            sessions.add(session_item)
+                else:
+                    # Check if it's a session folder directly
+                    if any(keyword in item.lower() for keyword in ['fall', 'spring']):
+                        sessions.add(item)
+    except Exception as e:
+        return jsonify({'error': f'Error reading directory: {str(e)}'}), 400
+    
+    return jsonify({
+        'teachers': sorted(teachers),
+        'sessions': sorted(list(sessions))
+    }), 200
+
+@app.route('/teacher-report', methods=['POST'])
+def teacher_report():
+    """Generate teacher-wise file reports with filtering."""
+    data = request.json
+    base_path = data.get('base_path')
+    report_type = data.get('report_type', 1)
+    selected_teachers = data.get('teachers', [])  # Empty means all teachers
+    selected_sessions = data.get('sessions', [])  # Empty means all sessions
+    
+    if not base_path or not os.path.isdir(base_path):
+        return jsonify({'error': 'Invalid base path provided'}), 400
+    
+    report_data = []
+    
+    try:
+        # Walk through teacher folders
+        for item in os.listdir(base_path):
+            teacher_path = os.path.join(base_path, item)
+            if os.path.isdir(teacher_path):
+                # Check if this looks like a teacher folder
+                if any(item.startswith(title) for title in ['Mr.', 'Ms.', 'Mrs.', 'Dr.']):
+                    # Filter by selected teachers
+                    if selected_teachers and item not in selected_teachers:
+                        continue
+                        
+                    teacher_folder = item
+                    # Walk through sessions
+                    for session_item in os.listdir(teacher_path):
+                        session_path = os.path.join(teacher_path, session_item)
+                        if os.path.isdir(session_path):
+                            # Filter by selected sessions
+                            if selected_sessions and session_item not in selected_sessions:
+                                continue
+                                
+                            # Process the session folder structure
+                            process_session_folder(session_path, teacher_folder, session_item, report_data, report_type)
+                else:
+                    # If no teacher structure, treat as direct session folders
+                    if selected_sessions and item not in selected_sessions:
+                        continue
+                    process_session_folder(teacher_path, "No Teacher", item, report_data, report_type)
+    except Exception as e:
+        return jsonify({'error': f'Error processing folders: {str(e)}'}), 400
+
+    return jsonify({'report': report_data}), 200
+
+def process_session_folder(session_path, teacher_name, session_name, report_data, report_type):
+    """Process a session folder and extract course information."""
+    try:
+        for dept_item in os.listdir(session_path):
+            dept_path = os.path.join(session_path, dept_item)
+            if os.path.isdir(dept_path) and dept_item in ['AI', 'DS', 'SE', 'CS']:
+                for semester_item in os.listdir(dept_path):
+                    semester_path = os.path.join(dept_path, semester_item)
+                    if os.path.isdir(semester_path) and semester_item.lower().startswith("semester"):
+                        for section_item in os.listdir(semester_path):
+                            section_path = os.path.join(semester_path, section_item)
+                            if os.path.isdir(section_path):
+                                for course_item in os.listdir(section_path):
+                                    course_path = os.path.join(section_path, course_item)
+                                    if os.path.isdir(course_path):
+                                        course_info = f"{session_name}/{dept_item}/{semester_item}/{section_item}/{course_item}"
+                                        
+                                        if report_type == 1:
+                                            files_info = analyze_course_files(course_path)
+                                            report_data.append({
+                                                'teacher': teacher_name,
+                                                'course_info': course_info,
+                                                'files': files_info
+                                            })
+                                        else:
+                                            completion_status = get_completion_status(course_path)
+                                            report_data.append({
+                                                'teacher': teacher_name,
+                                                'course_info': course_info,
+                                                'status': completion_status
+                                            })
+    except Exception as e:
+        print(f"Error processing session folder {session_path}: {str(e)}")
+
+def analyze_course_files(course_path):
+    """Analyze files in a course folder."""
+    files_info = []
+    for root, dirs, files in os.walk(course_path):
+        folder_name = os.path.basename(root)
+        
+        # Check if folder has content (files or subdirectories with files)
+        has_content = len(files) > 0
+        
+        # If no files, check if subdirectories have files
+        if not has_content and dirs:
+            for subdir in dirs:
+                subdir_path = os.path.join(root, subdir)
+                for sub_root, sub_dirs, sub_files in os.walk(subdir_path):
+                    if sub_files:
+                        has_content = True
+                        break
+                if has_content:
+                    break
+        
+        if has_content:
+            files_info.append({
+                'folder': folder_name,
+                'files': files,
+                'count': len(files),
+                'subdirs': len(dirs) if dirs else 0
+            })
+        else:
+            # Only mark as missing if truly empty (no files and no subdirs with files)
+            if not dirs:
+                files_info.append({
+                    'folder': folder_name,
+                    'status': 'MISSING FILES'
+                })
+            else:
+                files_info.append({
+                    'folder': folder_name,
+                    'status': 'HAS SUBFOLDERS',
+                    'subdirs': len(dirs)
+                })
+    
+    return files_info
+
+def get_completion_status(course_path):
+    """Get completion status for a course."""
+    missing_folders = []
+    
+    for root, dirs, files in os.walk(course_path):
+        folder_name = os.path.basename(root)
+        
+        # Skip if this is the course root folder
+        if root == course_path:
+            continue
+            
+        # Check if folder has content (files or subdirectories with files)
+        has_content = len(files) > 0
+        
+        # If no files, check if subdirectories have files
+        if not has_content and dirs:
+            for subdir in dirs:
+                subdir_path = os.path.join(root, subdir)
+                for sub_root, sub_dirs, sub_files in os.walk(subdir_path):
+                    if sub_files:
+                        has_content = True
+                        break
+                if has_content:
+                    break
+        
+        # Only consider it missing if it's truly empty and not in excluded folders
+        if not has_content and not dirs and folder_name not in ['Attendance', 'Course Description', 'Course Log']:
+            missing_folders.append(folder_name)
+    
+    if not missing_folders:
+        return "COMPLETED"
+    else:
+        return f"MISSING: {', '.join(missing_folders)}"
+
+def get_course_short_form(course_name):
+    """Convert course name to short form for file naming."""
+    # Common course mappings
+    course_mappings = {
+        'programming fundamentals': 'PF',
+        'object oriented programming': 'OOP',
+        'data structures and algorithms': 'DSA',
+        'database management systems': 'DBMS',
+        'software engineering': 'SE',
+        'artificial intelligence': 'AI',
+        'machine learning': 'ML',
+        'computer networks': 'CN',
+        'operating systems': 'OS',
+        'web development': 'WD',
+        'mobile app development': 'MAD',
+        'human computer interaction': 'HCI',
+        'computer graphics': 'CG',
+        'digital image processing': 'DIP',
+        'calculus': 'CALC',
+        'linear algebra': 'LA',
+        'discrete mathematics': 'DM',
+        'statistics': 'STAT',
+        'physics': 'PHY',
+        'english': 'ENG',
+        'islamic studies': 'IS',
+        'pakistan studies': 'PS'
+    }
+    
+    # Clean the course name
+    clean_name = course_name.lower().strip()
+    
+    # Remove common suffixes
+    clean_name = re.sub(r'\s*\(lab\)$', '', clean_name)
+    clean_name = re.sub(r'\s*lab$', '', clean_name)
+    clean_name = re.sub(r'\s*\(theory\)$', '', clean_name)
+    clean_name = re.sub(r'\s*theory$', '', clean_name)
+    
+    # Check for exact matches first
+    if clean_name in course_mappings:
+        return course_mappings[clean_name]
+    
+    # Check for partial matches
+    for full_name, short_form in course_mappings.items():
+        if full_name in clean_name or clean_name in full_name:
+            return short_form
+    
+    # If no match found, create abbreviation from words
+    words = clean_name.split()
+    if len(words) == 1:
+        # Single word - take first 3-4 characters
+        return words[0][:4].upper()
+    elif len(words) <= 3:
+        # 2-3 words - take first letter of each
+        return ''.join(word[0].upper() for word in words if word)
+    else:
+        # More than 3 words - take first letter of first 3 words
+        return ''.join(word[0].upper() for word in words[:3] if word)
 
 if __name__ == "__main__":
     app.run(debug=True)
