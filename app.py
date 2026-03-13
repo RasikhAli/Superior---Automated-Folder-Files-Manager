@@ -258,7 +258,9 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
 
                 # Skip already renamed files
                 if file.startswith(session):
-                    solution_file = os.path.join(root, file)
+                    # Check if this is actually a Solution file, not just any renamed file
+                    if 'solution' in file_lower:
+                        solution_file = os.path.join(root, file)
                     continue
                 # Check if file name contains any keyword
                 for keyword, file_type in rating_keywords.items():
@@ -292,14 +294,21 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
                 print("Solution file is missing, attempting to create one.")
                 best_file_path = None
 
-                # Search for the "best" file dynamically using rating_keywords
+                # Search for the "best" file - check both original filenames and renamed files
                 for file in files:
                     file_lower = file.lower()
                     
-                    # Check if the file matches the "best" category
-                    if any(keyword in file_lower for keyword in ['best', 'be']):  # Keywords for "best" in rating_keywords
+                    # Check if the file matches the "best" category in original name
+                    if any(keyword in file_lower for keyword in ['best', 'be']):
                         best_file_path = os.path.join(root, file)
-                        break  # Stop once a "best" file is found
+                        break
+                
+                # If not found in original files, check already renamed files
+                if not best_file_path:
+                    for file in files:
+                        if file.startswith(session) and '-Best-' in file:
+                            best_file_path = os.path.join(root, file)
+                            break
 
                 if best_file_path:
                     new_solution_path = os.path.join(
@@ -356,9 +365,9 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
                 # Skip already renamed files
                 if file.startswith(session):
                     continue
-                if 'marksheet' in file_lower or 'mark' in file_lower or 'ms' in file_lower:
+                if 'marksheet' in file_lower or 'mark' in file_lower or 'ms' in file_lower or 'mk' in file_lower:
                     new_name = f"{session}-{dept}-{section}-{course}-Result-Marksheet{os.path.splitext(file)[-1]}"
-                elif 'gradesheet' in file_lower or 'grade' in file_lower or 'gs' in file_lower:
+                elif 'gradesheet' in file_lower or 'grade' in file_lower or 'gs' in file_lower or 'gd' in file_lower:
                     new_name = f"{session}-{dept}-{section}-{course}-Result-Gradesheet{os.path.splitext(file)[-1]}"
                 elif 'clo attainment' in file_lower or 'clo' in file_lower:
                     new_name = f"{session}-{dept}-{section}-{course}-Result-CLO-Attainment{os.path.splitext(file)[-1]}"
@@ -401,7 +410,7 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
 
 
 
-        # Ensure the function only applies to Tasks, Assignments, and Quizzes
+        # Ensure the function only applies to Tasks, Assignments, Quizzes, Mid Term, and Final Term
         if folder_type == 'Lab' and file_type.startswith('Task'):
             number_match = re.search(r"Task\\s*(\\d+)", file_type, re.IGNORECASE)
             if number_match:
@@ -414,6 +423,20 @@ def rename_files(course_path, session, dept, semester, section, course, folder_t
             if number_match:
                 number = number_match.group(2)
                 format_string = format_mapping[folder_type][number_match.group(1)]
+            else:
+                continue
+        elif folder_type == 'Course' and file_type.startswith('Mid'):
+            number_match = re.search(r"Mid\\s*Term", file_type, re.IGNORECASE)
+            if number_match:
+                number = '1'
+                format_string = format_mapping[folder_type]['Mid Term']
+            else:
+                continue
+        elif folder_type == 'Course' and file_type.startswith('Final'):
+            number_match = re.search(r"Final\\s*Term", file_type, re.IGNORECASE)
+            if number_match:
+                number = '1'
+                format_string = format_mapping[folder_type]['Final Term']
             else:
                 continue
         else:
