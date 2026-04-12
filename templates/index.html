@@ -8,38 +8,43 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --light-bg: #f8f9fa;
-            --dark-text: #2c3e50;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-purple: #6C1C74;
+            --deep-purple: #4A1050;
+            --hover-purple: #521557;
+            --crimson-alert: #D72924;
+            --gold-acent: #BC9354;
+            --deep-background: #0a040b;
+            --surface-dark: #120815;
+            --slate-light: #cbd5e1;
+            --slate-dark: #334155;
+            --emerald-success: #10b981;
+            --amber-warning: #f59e0b;
+            --rose-danger: #ef4444;
+            --blue-info: #3b82f6;
+            --light-bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #2c3e50;
+            --text-muted: #6b7280;
+            --bg-gradient: linear-gradient(135deg, #6C1C74 0%, #4A1050 100%);
             --card-bg: rgba(255, 255, 255, 0.95);
-            --text-color: #2c3e50;
-            --border-color: #e9ecef;
         }
 
         [data-bs-theme="dark"] {
-            --primary-color: #34495e;
-            --secondary-color: #5dade2;
-            --success-color: #58d68d;
-            --warning-color: #f7dc6f;
-            --danger-color: #ec7063;
-            --light-bg: #2c3e50;
-            --dark-text: #ecf0f1;
-            --bg-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            --card-bg: rgba(44, 62, 80, 0.95);
-            --text-color: #ecf0f1;
-            --border-color: #34495e;
+            --light-bg: #09090b;
+            --surface: #18181b;
+            --border: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --bg-gradient: linear-gradient(135deg, #6C1C74 0%, #0a040b 100%);
+            --card-bg: rgba(24, 24, 27, 0.95);
         }
 
         body {
             background: var(--bg-gradient);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text-color);
+            color: var(--text-main);
             transition: all 0.3s ease;
         }
 
@@ -66,7 +71,7 @@
             position: absolute;
             top: 0;
             right: 0;
-            background: var(--secondary-color);
+            background: var(--primary-purple);
             border: none;
             color: white;
             padding: 0.5rem 1rem;
@@ -76,7 +81,7 @@
         }
 
         .theme-toggle:hover {
-            background: var(--primary-color);
+            background: var(--deep-purple);
             transform: translateY(-2px);
         }
 
@@ -96,7 +101,7 @@
         }
 
         .section-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary-purple), var(--deep-purple));
             color: white;
             padding: 1.5rem;
             margin: 0;
@@ -141,13 +146,13 @@
 
         .form-control:focus, .form-select:focus {
             background-color: var(--card-bg);
-            border-color: var(--secondary-color);
-            color: var(--text-color);
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+            border-color: var(--primary-purple);
+            color: var(--text-main);
+            box-shadow: 0 0 0 0.2rem rgba(108, 28, 116, 0.25);
         }
 
         .btn-custom {
-            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            background: linear-gradient(135deg, var(--primary-purple), var(--deep-purple));
             border: none;
             color: white;
             padding: 0.75rem 2rem;
@@ -160,9 +165,9 @@
         }
 
         .btn-custom:hover {
-            background: linear-gradient(135deg, #2980b9, var(--secondary-color));
+            background: linear-gradient(135deg, var(--hover-purple), var(--primary-purple));
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(108, 28, 116, 0.4);
             color: white;
         }
 
@@ -200,7 +205,7 @@
         }
 
         .table thead th {
-            background: var(--primary-color);
+            background: var(--primary-purple);
             color: white;
             border: none;
             padding: 1rem;
@@ -241,18 +246,24 @@
             font-weight: normal;
         }
 
-        .status-success {
-            background: var(--success-color);
+        .status-green {
+            background: var(--emerald-success);
             color: white;
         }
-
-        .status-warning {
-            background: var(--warning-color);
+        .status-yellow {
+            background: var(--amber-warning);
             color: white;
         }
-
-        .status-danger {
-            background: var(--danger-color);
+        .status-orange {
+            background: var(--gold-acent);
+            color: white;
+        }
+        .status-red {
+            background: var(--rose-danger);
+            color: white;
+        }
+        .status-gray {
+            background: var(--slate-dark);
             color: white;
         }
 
@@ -265,7 +276,7 @@
         }
 
         .report-header {
-            background: linear-gradient(135deg, #34495e, #2c3e50);
+            background: linear-gradient(135deg, var(--primary-purple), var(--deep-purple));
             color: white;
             padding: 1rem 1.5rem;
             font-weight: 600;
@@ -331,9 +342,8 @@
 
         .nav-tabs .nav-link {
             border: none;
-            background: #f8f9fa;
-            /* color: var(--dark-text); */
-            color: #2c3e50;
+            background: var(--light-bg);
+            color: var(--text-main);
             border-radius: 10px 10px 0 0;
             margin-right: 0.5rem;
             font-weight: 600;
@@ -341,13 +351,13 @@
         }
 
         .nav-tabs .nav-link.active {
-            background: var(--secondary-color);
+            background: var(--primary-purple);
             color: white;
         }
 
         .nav-tabs .nav-link:hover {
-            background: var(--secondary-color);
-            color: var(--dark-text);
+            background: var(--hover-purple);
+            color: white;
         }
     </style>
 </head>
@@ -748,10 +758,12 @@
                 contentType: "application/json",
                 data: JSON.stringify(formData),
                 success: function(response) {
+                    console.log("Report response:", response);
                     $("#report-loading").hide();
                     displayTeacherReport(response.report);
                 },
                 error: function(err) {
+                    console.log("Report error:", err);
                     $("#report-loading").hide();
                     showMessage("#teacher-report-results", err.responseJSON?.error || "Failed to generate report.", "danger");
                 }
@@ -791,18 +803,15 @@
                         
                         let statusClass = "";
                         if (fileCount === 0 && folders.length === 0) {
-                            // Only show as missing if both files and folders are empty
-                            statusClass = "status-danger";
+                            statusClass = "status-red";
                         } else if (folder.includes("Task") || folder.includes("Assignment") || folder.includes("Quiz")) {
-                            // For task/assignment folders, check if they have content (files or subfolders)
-                            statusClass = (fileCount > 0 || folders.length > 0) ? "status-success" : "status-danger";
+                            statusClass = (fileCount > 0 || folders.length > 0) ? "status-gray" : "status-red";
                         } else if (folder.includes("Final Term") || folder.includes("Mid Term")) {
-                            statusClass = fileCount > 3 ? "status-success" : "status-warning";
+                            statusClass = fileCount >= 5 ? "status-green" : fileCount >= 3 ? "status-yellow" : fileCount > 0 ? "status-orange" : "status-red";
                         } else if (folder.includes("Result")) {
-                            statusClass = fileCount > 1 ? "status-success" : "status-warning";
+                            statusClass = fileCount >= 3 ? "status-green" : fileCount >= 2 ? "status-yellow" : fileCount > 0 ? "status-orange" : "status-red";
                         } else {
-                            // For other folders, consider them good if they have files or subfolders
-                            statusClass = (fileCount > 0 || folders.length > 0) ? "status-success" : "status-warning";
+                            statusClass = (fileCount > 0 || folders.length > 0) ? "status-green" : "status-red";
                         }
 
                         const row = `<tr>
@@ -821,6 +830,7 @@
         }
 
         function displayTeacherReport(report) {
+            console.log("displayTeacherReport called with:", report);
             const resultsDiv = $("#teacher-report-results");
             resultsDiv.empty();
             
@@ -833,14 +843,13 @@
                 return;
             }
             
-            // Create table structure
             const tableHtml = `
                 <div class="table-container">
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th style="width: 60%;">Course Information</th>
-                                <th style="width: 40%;">Status</th>
+                                <th style="width: 50%;">Course Information</th>
+                                <th style="width: 50%;">Status</th>
                             </tr>
                         </thead>
                         <tbody id="report-table-body">
@@ -858,30 +867,58 @@
                 let statusContent = '';
                 
                 if (item.files) {
-                    // Detailed report
                     const statusItems = item.files.map(folder => {
-                        if (folder.status === 'MISSING FILES') {
-                            return `<div class="file-status missing mb-1">
-                                <i class="fas fa-exclamation-circle"></i> ${folder.folder}: Missing Files
-                            </div>`;
-                        } else if (folder.status === 'HAS SUBFOLDERS') {
-                            return `<div class="file-status present mb-1">
-                                <i class="fas fa-folder"></i> ${folder.folder}: ${folder.subdirs} subfolder(s)
-                            </div>`;
-                        } else {
-                            const fileText = folder.count > 0 ? `${folder.count} files` : '';
-                            const subdirText = folder.subdirs > 0 ? `${folder.subdirs} subfolder(s)` : '';
-                            const combinedText = [fileText, subdirText].filter(Boolean).join(', ');
-                            
-                            return `<div class="file-status present mb-1">
-                                <i class="fas fa-check-circle"></i> ${folder.folder}: ${combinedText}
-                            </div>`;
+                        if (!folder.status) {
+                            return '';
                         }
+                        
+                        const color = folder.status.color || 'gray';
+                        const statusClass = `status-${color}`;
+                        const icon = color === 'green' ? 'fas fa-check-circle' : 
+                                     color === 'red' ? 'fas fa-times-circle' : 
+                                     color === 'yellow' ? 'fas fa-exclamation-triangle' :
+                                     color === 'orange' ? 'fas fa-exclamation-circle' : 'fas fa-minus-circle';
+                        
+                        let folderInfo = '';
+                        if (folder.files && folder.files.length > 0) {
+                            folderInfo = `${folder.files.length} file(s)`;
+                        } else if (folder.subdirs > 0) {
+                            folderInfo = `${folder.subdirs} subfolder(s)`;
+                        } else {
+                            folderInfo = 'Empty';
+                        }
+                        
+                        if (folder.status.complete_subfolders !== undefined) {
+                            folderInfo = `${folder.status.complete_subfolders}/${folder.status.total_subfolders} complete subfolder(s)`;
+                        }
+                        
+                        let missingInfo = '';
+                        if (folder.status.missing && folder.status.missing.length > 0) {
+                            missingInfo = folder.status.missing.map(m => `<div class="ms-3 text-light opacity-75" style="font-size: 0.75rem;">• ${m}</div>`).join('');
+                        }
+                        
+                        let namingInfo = '';
+                        if (folder.status.naming_issues && folder.status.naming_issues.length > 0) {
+                            namingInfo = folder.status.naming_issues.map(n => `<div class="ms-3 text-light opacity-75" style="font-size: 0.75rem;">⚠ ${n}</div>`).join('');
+                        }
+                        
+                        let progressInfo = '';
+                        if (folder.status.total_required > 0) {
+                            const pct = folder.status.total_required > 0 ? 
+                                Math.round((folder.status.total_present / folder.status.total_required) * 100) : 0;
+                            progressInfo = `<div class="text-light opacity-75" style="font-size: 0.75rem;">${folder.status.total_present}/${folder.status.total_required} (${pct}%)</div>`;
+                        }
+                        
+                        return `<div class="file-status ${statusClass} mb-2">
+                            <i class="${icon}"></i> <strong>${folder.folder}</strong>: ${folderInfo}
+                            ${progressInfo}
+                            ${missingInfo}
+                            ${namingInfo}
+                        </div>`;
                     }).join('');
                     
                     statusContent = `<div class="status-details">${statusItems}</div>`;
                 } else {
-                    // Status report
                     const statusClass = item.status === "COMPLETED" ? "present" : "missing";
                     const icon = item.status === "COMPLETED" ? "fas fa-check-circle" : "fas fa-exclamation-circle";
                     

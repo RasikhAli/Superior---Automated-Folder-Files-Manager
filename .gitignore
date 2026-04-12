@@ -2,3 +2,6 @@
 /appold.py
 /appsomewhatwork.py
 /venv
+txt.txt
+/__pycache__
+/.ruff_cache
